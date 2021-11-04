@@ -86,30 +86,51 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // updated hook is called by the scheduler to ensure that children are
     // updated in a parent's updated hook.
   }
-
+  /*
+    作用是迫使Vue.js实例重新渲染。注意它仅仅影响实例本身以及插入插槽内容的子组件，而不是所有子组件。
+    手动执行组件（实例）中的watcher进行重新渲染
+  */
   Vue.prototype.$forceUpdate = function () {
     const vm: Component = this
     if (vm._watcher) {
       vm._watcher.update()
     }
   }
-
+  /*
+    作用是完全销毁一个实例，它会清理该实例与其他实例的连接，并解绑其全部指令及监听器，同时会触发beforeDestroy和destroyed的钩子函数。
+  */
   Vue.prototype.$destroy = function () {
     const vm: Component = this
+    // _isBeingDestroyed 如果它为true，说明Vue.js实例正在被销毁，直接使用return语句退出函数执行逻辑。因为销毁只需要销毁一次即可，不需要反复销毁。
     if (vm._isBeingDestroyed) {
       return
     }
+    // 触发beforeDestroy的钩子函数
     callHook(vm, 'beforeDestroy')
     vm._isBeingDestroyed = true
     // remove self from parent
     const parent = vm.$parent
+    // 如果当前实例有父级，同时父级没有被销毁且不是抽象组件，那么将自己从父级的子级列表中删除，也就是将自己的实例从父级的$children属性中删除
     if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
+      // 当前组件实例从父组件实例的$children属性中删除
+      // 说明　Vue.js实例的 $children属性存储了所有子组件
+      // 子组件在不同父组件中是不同的Vue.js实例，所以一个子组件实例的父级只有一个，销毁操作也只需要从父级的子组件列表中销毁当前这个Vue.js实例
+      // remove的具体操作是在列表中删除某元素
       remove(parent.$children, vm)
     }
     // teardown watchers
+    /**
+     * 从Vue.js 2.0开始，变化侦测的粒度调整为中等粒度，它只会发送通知到组件级别，然后组件使用虚拟DOM进行重新渲染。
+     * 组件其实就是Vue.js实例，怎么通知到组件级别呢？
+     * 事实上，在Vue.js实例上，有一个watcher，也就是vm._watcher，它会监听这个组件中用到的所有状态，即这个组件内用到的所有状态的依赖列表中都会收集到vm._watcher中。
+     * 当这些状态发生变化时，也都会通知vm._watcher，然后这个watcher再调用虚拟DOM进行重新渲染。
+     * 说明：vue是以实例（或组件）为单位进行DOM渲染。
+     */
     if (vm._watcher) {
+      // 组件自身的watcher实例的teardown方法，从所有依赖项的订阅列表中删除watcher实例
       vm._watcher.teardown()
     }
+    // 删除此实例（组件）中，用户所创建（$watcher）的watcher
     let i = vm._watchers.length
     while (i--) {
       vm._watchers[i].teardown()
@@ -120,12 +141,16 @@ export function lifecycleMixin (Vue: Class<Component>) {
       vm._data.__ob__.vmCount--
     }
     // call the last hook...
+    // 向Vue.js实例添加 _isDestroyed属性来表示Vue.js实例已经被销毁
     vm._isDestroyed = true
     // invoke destroy hooks on current rendered tree
+    // 当vm.$destroy执行时，Vue.js不会将已经渲染到页面中的DOM节点移除，但会将模板中的所有指令解绑
     vm.__patch__(vm._vnode, null)
     // fire destroyed hook
+    // 触发destroyed钩子函数
     callHook(vm, 'destroyed')
     // turn off all instance listeners.
+    // 移除所有的事件监听器
     vm.$off()
     // remove __vue__ reference
     if (vm.$el) {
@@ -138,6 +163,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
   }
 }
 
+// 实际是vm.$mount的实现
 export function mountComponent (
   vm: Component,
   el: ?Element,

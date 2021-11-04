@@ -319,6 +319,7 @@ function createWatcher (
   return vm.$watch(expOrFn, handler, options)
 }
 
+// 挂载数据相关的实例方法
 export function stateMixin (Vue: Class<Component>) {
   // flow somehow has problems with directly declared definition object
   // when using Object.defineProperty, so we have to procedurally build up
@@ -341,7 +342,7 @@ export function stateMixin (Vue: Class<Component>) {
   }
   Object.defineProperty(Vue.prototype, '$data', dataDef)
   Object.defineProperty(Vue.prototype, '$props', propsDef)
-
+  // 在此处分别挂载$set、$delete和$watch
   Vue.prototype.$set = set
   Vue.prototype.$delete = del
 

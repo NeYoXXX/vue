@@ -54,6 +54,7 @@ export default class Watcher {
     if (isRenderWatcher) {
       vm._watcher = this
     }
+    // 然后每当创建watcher实例时，都会将watcher实例添加到vm._watchers中。
     vm._watchers.push(this)
     // options
     if (options) {

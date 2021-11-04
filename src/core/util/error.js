@@ -33,6 +33,9 @@ export function handleError (err: Error, vm: any, info: string) {
   }
 }
 
+/*
+  使用错误处理调用
+ */ 
 export function invokeWithErrorHandling (
   handler: Function,
   context: any,
@@ -50,6 +53,7 @@ export function invokeWithErrorHandling (
       res._handled = true
     }
   } catch (e) {
+    // 如果在Vue.config.errorHandler配置了错误处理函数，它将会被触发
     handleError(e, vm, info)
   }
   return res
